@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="fill_parent"
+    android:layout_height="wrap_content"
+    android:background="@android:color/holo_orange_light">
+
+    <!--
+    <ImageView
+        android:id="@+id/imageDialog"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:srcCompat="@mipmap/ic_launcher"
+        android:layout_marginRight="5dp" />
+    -->
+    <TextView
+        android:id="@+id/unpairtext"
+        style="?attr/actionBarPopupTheme"
+        android:layout_width="fill_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginLeft="5dp"
+        android:layout_marginTop="10dp"
+        android:text="@string/action_settings"
+        android:textColor="#000"
+        android:textSize="@dimen/fab_margin"
+        android:textStyle="bold" />
+
+    <Button
+        android:id="@+id/forget"
+        android:layout_width="80dp"
+        android:layout_height="wrap_content"
+        android:layout_below="@+id/unpairtext"
+        android:layout_marginLeft="200dp"
+        android:layout_marginRight="5dp"
+        android:layout_marginTop="0dp"
+        android:text="Forget" />
+</RelativeLayout>

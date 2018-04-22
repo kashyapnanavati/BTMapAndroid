@@ -1,6 +1,7 @@
 package com.btmap.jankidave.btmap;
 
 import android.Manifest;
+import android.app.Dialog;
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
 import android.bluetooth.BluetoothGatt;
@@ -16,6 +17,7 @@ import android.os.Bundle;
 import android.support.design.widget.FloatingActionButton;
 import android.support.design.widget.Snackbar;
 import android.support.v4.app.ActivityCompat;
+import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.RecyclerView;
 import android.support.v7.widget.Toolbar;
@@ -33,6 +35,7 @@ import android.widget.TableLayout;
 import android.widget.TextView;
 
 import java.io.IOException;
+import java.lang.reflect.Method;
 import java.util.List;
 import java.util.ArrayList;
 import android.support.v7.app.AppCompatActivity;
@@ -56,6 +59,7 @@ public class MainActivity extends AppCompatActivity {
     private IntentFilter filter2 = new IntentFilter();
     private String disconnectBT;
     final ArrayList list = new ArrayList();
+
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -138,7 +142,8 @@ public class MainActivity extends AppCompatActivity {
         pairedDevices = BA.getBondedDevices();
 
         ArrayList list = new ArrayList();
-
+        list.clear();
+        BA.cancelDiscovery();
         for(BluetoothDevice bt : pairedDevices) {
             //list.add(bt.getName());
             String devicename = bt.getName();
@@ -183,13 +188,66 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public boolean onItemLongClick(AdapterView<?> parent, View view, int position, long id) {
                 lv.setOnItemLongClickListener(null);
-                Toast.makeText(getApplicationContext(), "Long click To be implemented", Toast.LENGTH_LONG).show();
+                Toast.makeText(getApplicationContext(), "Long click : Open Dialog to unpair the device", Toast.LENGTH_LONG).show();
+                String info = ((TextView) view).getText().toString();
+                Log.v(TAG, "device info = " + info + "\n");
+                //get the device address when click the device item
+                String address = info.substring(info.length() - 17);
+                Log.v(TAG, "device Address = " + address + "\n");
+                CreateDialog(address);
                 return true;
             }
         });
 
 
     }
+
+    void CreateDialog(final String btDeviceAddress) {
+
+        Log.v(TAG, "Create Dialog called" +"\n");
+
+        // custom dialog
+        //final Dialog dialog = new Dialog(this);
+        //dialog.setContentView(R.layout.unpairedialog);
+        //dialog.setTitle("Paired Device");
+
+        AlertDialog.Builder builder = new AlertDialog.Builder(this);
+        builder.setTitle("" + btDeviceAddress);
+
+        // set the custom layout
+        final View customLayout = getLayoutInflater().inflate(R.layout.unpairedialog, null);
+        builder.setView(customLayout);
+
+        // set the custom dialog components - text, image and button
+        //TextView text = (TextView) dialog.findViewById(R.id.unpairtext);
+        //text.setText("Do you want to forgot the device ?");
+        TextView text = (TextView) customLayout.findViewById(R.id.unpairtext);
+        text.setText("Do you want to remove the device ?");
+
+        final AlertDialog dialog = builder.create();
+
+        Button dialogButton = (Button) customLayout.findViewById(R.id.forget);
+        // if button is clicked, close the custom dialog
+        dialogButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                Log.v(TAG, "Un Pairing the device...");
+                if (UnPair(btDeviceAddress) == true) {
+                    Log.v(TAG, "Device Unpaired Successfully !");
+                } else {
+                    Log.e(TAG, "Exception un pairing the device");
+                }
+                dialog.dismiss();
+            }
+        });
+
+        //dialog.show();
+        // create and show the alert dialog
+
+        dialog.show();
+    }
+
+
     public void listAvailable(View v) {
 
         if (!BA.enable()) {
@@ -287,6 +345,25 @@ public class MainActivity extends AppCompatActivity {
         Log.i(TAG, "Bond created");
         boolean result = device.createBond();
         return result;
+    }
+
+    public boolean UnPair(String address) {
+        try {
+            Class<?> btDeviceInstance = Class.forName(BluetoothDevice.class.getCanonicalName());
+            Method removeBondMethod = btDeviceInstance.getMethod("removeBond");
+            final BluetoothDevice device = BA.getRemoteDevice(address);
+
+            Log.i(TAG, "Un Pairing Initiated...");
+            Log.i(TAG, "Bond removed");
+            if (device.getBondState() == BluetoothDevice.BOND_BONDED) {
+                removeBondMethod.invoke(device);
+                Log.i(TAG, "Cleared Pairing");
+            }
+            return true;
+        } catch (Throwable th) {
+            Log.e(TAG, "Error pairing", th);
+            return false;
+        }
     }
 
     public void disconnectGatt(BluetoothGatt gatt) {
