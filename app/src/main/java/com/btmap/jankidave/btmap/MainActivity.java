@@ -81,7 +81,8 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public void onClick(View view) {
                 System.out.println("Start New Activity \n");
-                Intent Intent = new Intent(view.getContext(), TestMessage.class);
+                //Intent Intent = new Intent(view.getContext(), TestMessage.class);
+                Intent Intent = new Intent(view.getContext(), Message.class);
                 view.getContext().startActivity(Intent);
             }
         });
