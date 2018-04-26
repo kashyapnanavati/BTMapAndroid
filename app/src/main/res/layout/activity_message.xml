@@ -34,7 +34,7 @@
                     android:layout_weight="6"
                     android:background="@drawable/rounded_corner"
                     android:padding="16dp"
-                    android:text="Android charting application xml ui design tutorial with example. Android charting application xml ui design tutorial with example. Android charting application xml ui design tutorial with example. Android charting application xml ui design tutorial with example."
+                    android:text="TODO : Implemented this"
                     android:textColor="#000" />
 
                 <ImageView
@@ -89,7 +89,7 @@
                     android:layout_weight="6"
                     android:background="@drawable/rounded_corner1"
                     android:padding="16dp"
-                    android:text="Android charting application xml ui design. Android charting application xml ui design tutorial with example. Android charting application xml ui design. Android charting application xml ui design. "
+                    android:text="TODO : Implemented this"
                     android:textColor="#000" />
 
             </LinearLayout>
@@ -110,7 +110,7 @@
                     android:layout_weight="6"
                     android:background="@drawable/rounded_corner"
                     android:padding="16dp"
-                    android:text="Android charting application xml ui design tutorial with example. Android charting application xml ui design tutorial with example. Android charting application xml ui design tutorial with example. Android charting application xml ui design tutorial with example."
+                    android:text="TODO : Implemented this"
                     android:textColor="#000" />
 
                 <ImageView
@@ -165,7 +165,7 @@
                     android:layout_weight="6"
                     android:background="@drawable/rounded_corner1"
                     android:padding="16dp"
-                    android:text="Android charting application xml ui design. Android charting application xml ui design tutorial with example. Android charting application xml ui design. Android charting application xml ui design. "
+                    android:text="TODO : Implemented this"
                     android:textColor="#000" />
             </LinearLayout>
         </RelativeLayout>

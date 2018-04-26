@@ -135,6 +135,8 @@ public class MainActivity extends AppCompatActivity {
 
     public  void visible(View v){
         Intent getVisible = new Intent(BluetoothAdapter.ACTION_REQUEST_DISCOVERABLE);
+        // sets the device to be discoverable for 3 minutes (180 seconds)
+        getVisible.putExtra(BluetoothAdapter.EXTRA_DISCOVERABLE_DURATION, 180);
         startActivityForResult(getVisible, 0);
     }
 
@@ -291,7 +293,9 @@ public class MainActivity extends AppCompatActivity {
         //@Override
         public void onReceive(Context context, Intent intent) {
             String action = intent.getAction();
+            int int_action = intent.getIntExtra(BluetoothAdapter.EXTRA_SCAN_MODE, -1);
             Log.i(TAG,"KP Debug onReceive Called Action = " +action+"\n");
+            Log.i(TAG,"KP Debug onReceive Called IntAction = " +int_action+"\n");
             if (BluetoothDevice.ACTION_FOUND.equals(action)) {
                 BluetoothDevice device = intent.getParcelableExtra(BluetoothDevice.EXTRA_DEVICE);
                 String deviceInfo=device.getName() + "\n" + device.getAddress();
@@ -306,6 +310,19 @@ public class MainActivity extends AppCompatActivity {
             }
             else if(BluetoothAdapter.ACTION_DISCOVERY_FINISHED.equals(action)) {
                 Log.i("In discovery finished", "Discovery finished");
+            }
+            else if (BluetoothAdapter.SCAN_MODE_CONNECTABLE_DISCOVERABLE == int_action) {
+                Log.i("SCN_MD_CONNECT_DISCVRBL", "The device is in discoverable mode");
+                Toast.makeText(getApplicationContext(), "The device is in discoverable mode",Toast.LENGTH_LONG).show();
+            }
+            else if (BluetoothAdapter.SCAN_MODE_CONNECTABLE == int_action) {
+                Log.i("SCAN_MODE_CONNECTABLE", "The device isn't in discoverable mode but can still receive connections");
+                Toast.makeText(getApplicationContext(), "The device isn't in discoverable mode but can still receive connections",Toast.LENGTH_LONG).show();
+
+            } else if (BluetoothAdapter.SCAN_MODE_NONE == int_action)
+            {
+                Log.i("SCAN_MODE_NONE", "The device isn't in discoverable mode and cannot receive connections");
+                Toast.makeText(getApplicationContext(), "The device isn't in discoverable mode and cannot receive connections",Toast.LENGTH_LONG).show();
             }
         }
     };
