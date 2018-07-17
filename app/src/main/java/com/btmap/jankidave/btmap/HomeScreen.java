@@ -29,6 +29,7 @@ public class HomeScreen extends AppCompatActivity {
             @Override
             public void onClick(View view) {
                 Log.v(TAG, "Starting the connection Activity\n");
+                Log.e(TAG, "Starting the connection Activity\n");
                 Intent Intent = new Intent(view.getContext(), MainActivity.class);
                 view.getContext().startActivity(Intent);
             }

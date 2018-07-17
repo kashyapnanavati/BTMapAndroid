@@ -14,8 +14,10 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.os.Bundle;
+import android.os.Handler;
 import android.support.design.widget.FloatingActionButton;
 import android.support.design.widget.Snackbar;
+import android.support.design.widget.TextInputLayout;
 import android.support.v4.app.ActivityCompat;
 import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
@@ -45,12 +47,15 @@ import android.support.v7.widget.RecyclerView;
 import java.util.Set;
 import android.widget.Toast;
 import android.widget.ArrayAdapter;
+import android.os.Message;
+
+import org.json.JSONException;
 
 public class MainActivity extends AppCompatActivity {
 
-    Button b_on, b_off, b_list_devices, b_get_visible;
+    Button b_on, b_off, b_list_devices, b_get_visible, start;
     TextView listItem;
-    private BluetoothAdapter BA;
+    BluetoothAdapter BA;
     private Set<BluetoothDevice>pairedDevices;
     ListView lv, lva;
     private static final String TAG = "MainActivity";
@@ -59,7 +64,18 @@ public class MainActivity extends AppCompatActivity {
     private IntentFilter filter2 = new IntentFilter();
     private String disconnectBT;
     final ArrayList list = new ArrayList();
+    private int mState;
 
+    private static final int REQUEST_ENABLE_BLUETOOTH = 1;
+
+    private BluetoothService mChatService; //Member object for the chat services
+    private String mConnectedDeviceName; //Name of the connected device
+
+    /*Messages layout related defines */
+    private TextInputLayout inputLayout;
+    private ArrayAdapter<String> chatAdapter;
+    private ArrayList<String> chatMessages;
+    private ListView msglistview;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -75,24 +91,40 @@ public class MainActivity extends AppCompatActivity {
         BA = BluetoothAdapter.getDefaultAdapter();
         lv = (ListView)findViewById(R.id.listView);
 
-        Button start = (Button)findViewById(R.id.Start);
-
-        start.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                System.out.println("Start New Activity \n");
-                //Intent Intent = new Intent(view.getContext(), TestMessage.class);
-                Intent Intent = new Intent(view.getContext(), Message.class);
-                view.getContext().startActivity(Intent);
-            }
-        });
-
         filter2.addAction(BluetoothDevice.ACTION_FOUND);
         filter2.addAction(BA.ACTION_DISCOVERY_STARTED);
         filter2.addAction(BA.ACTION_DISCOVERY_FINISHED);
         filter2.addAction(BA.ACTION_SCAN_MODE_CHANGED);
         filter2.addAction(BA.ACTION_SCAN_MODE_CHANGED);
         registerReceiver(mReceiver, filter2);
+
+        mChatService = new BluetoothService(this, mHandler);
+        /*Testing on Saturday */
+        if (mChatService.getState() == mChatService.STATE_NONE) {
+            mChatService.start();
+        }
+
+        /*Testing Send message functionality */
+        start =(Button) findViewById(R.id.Start);
+        start.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                //Start new activity where we can test send/receive data messages for now
+                //Intent Intent = new Intent(getApplicationContext(), Messages.class);
+                //startActivity(Intent);
+                //sendMessage("Hello KP How are you ?");
+                setContentView(R.layout.activity_messages);
+                findViewsByIdsMessages();
+                //set chat adapter
+                chatMessages = new ArrayList<String>();
+                chatAdapter = new ArrayAdapter<String>(
+                        MainActivity.this,
+                        android.R.layout.simple_list_item_1,
+                        chatMessages);
+                msglistview.setAdapter(chatAdapter);
+
+            }
+        });
 
         /* Asking permission at runtime */
         int MY_PERMISSIONS_REQUEST_ACCESS_COARSE_LOCATION = 1;
@@ -102,18 +134,7 @@ public class MainActivity extends AppCompatActivity {
         ActivityCompat.requestPermissions(this,
                 new String[]{Manifest.permission.ACCESS_FINE_LOCATION},
                 MY_PERMISSIONS_REQUEST_ACCESS_COARSE_LOCATION);
-    }
 
-    @Override
-    protected void onResume() {
-        super.onResume();
-    }
-
-    @Override
-    protected void onDestroy() {
-        unregisterReceiver(mReceiver);
-        disconnectGatt(mBluetoothGatt);
-        super.onDestroy();
     }
 
     public void on(View v){
@@ -129,7 +150,7 @@ public class MainActivity extends AppCompatActivity {
     public void off(View v){
         BA.disable();
         Toast.makeText(getApplicationContext(), "Turned off" ,Toast.LENGTH_LONG).show();
-        disconnectGatt(mBluetoothGatt);
+        //disconnectGatt(mBluetoothGatt);
     }
 
 
@@ -140,6 +161,57 @@ public class MainActivity extends AppCompatActivity {
         startActivityForResult(getVisible, 0);
     }
 
+    private final Handler mHandler = new Handler() {
+            public void handleMessage(Message msg) {
+                switch(msg.what) {
+                    case Constants.MESSAGE_STATE_CHANGE:
+                        Log.v(TAG, "mHandler --> MESSAGE_STATE_CHANGE\n");
+                        switch (msg.arg1) {
+                            case BluetoothService.STATE_CONNECTED:
+                                Log.v(TAG, "BluetoothService.STATE_CONNECTED\n");
+                                break;
+                            case BluetoothService.STATE_CONNECTING:
+                                Log.v(TAG, "BluetoothService.STATE_CONNECTING\n");
+                                break;
+                            case BluetoothService.STATE_LISTEN:
+                                Log.v(TAG, "BluetoothService.STATE_LISTEN\n");
+                            case BluetoothService.STATE_NONE:
+                                Log.v(TAG, "BluetoothService.STATE_NONE\n");
+                                break;
+                        }
+                        break;
+                    case Constants.MESSAGE_DEVICE_NAME:
+                        Log.v(TAG, "mHandler --> MESSAGE_DEVICE_NAME\n");
+                        // save the connected device's name
+                        mConnectedDeviceName = msg.getData().getString(Constants.DEVICE_NAME);
+                        if (null != getApplicationContext()) {
+                            Toast.makeText(getApplicationContext(), "Connected to "
+                                    + mConnectedDeviceName, Toast.LENGTH_SHORT).show();
+                        }
+                        break;
+                    case Constants.MESSAGE_READ:
+                        Log.v(TAG, "mHandler --> MESSAGE_READ\n");
+                        byte[] readBuf = (byte[]) msg.obj;
+
+                        String readMessage = new String(readBuf, 0, msg.arg1);
+                        chatMessages.add(mConnectedDeviceName.getBytes() + ":  " + readMessage);
+                        chatAdapter.notifyDataSetChanged();
+                        break;
+                    case Constants.MESSAGE_WRITE:
+                        Log.v(TAG, "mHandler --> MESSAGE_WRITE\n");
+                        byte[] writeBuf = (byte[]) msg.obj;
+
+                        String writeMessage = new String(writeBuf);
+                        chatMessages.add("Me: " + writeMessage);
+                        chatAdapter.notifyDataSetChanged();
+                        break;
+                    case Constants.MESSAGE_TOAST:
+                        Toast.makeText(getApplicationContext(), msg.getData().getString("toast"),
+                                Toast.LENGTH_SHORT).show();
+                        break;
+                }
+            }
+    };
 
     public void list(View v){
         pairedDevices = BA.getBondedDevices();
@@ -176,13 +248,16 @@ public class MainActivity extends AppCompatActivity {
                 String address = info.substring(info.length() - 17);
                 Log.v(TAG, "device Address = " + address + "\n");
                 //TODO: Enable Connection Later - Testing is difficult
-                /*
-                if (!connect(address)) {
-                    Log.e(TAG, "Cannot connect to BLE Device\n");
+                final BluetoothDevice device = BA.getRemoteDevice(address);
+                //mChatService = new BluetoothService(getApplicationContext(), mHandler, device, BA);
+                // Only if the state is STATE_NONE, do we know that we haven't started already
+                if (mChatService != null) {
+                  //  Log.v(TAG, "Start connectThread Class -->" + "\n");
+                    // Start the Bluetooth chat services
+                    mChatService.connect(device, false);
                 } else {
-                    Log.i(TAG, "Connected to device ---> " + info);
+                    Log.v(TAG, "mChatService is NULL " + "\n");
                 }
-                */
 
             }
         });
@@ -191,7 +266,7 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public boolean onItemLongClick(AdapterView<?> parent, View view, int position, long id) {
                 lv.setOnItemLongClickListener(null);
-                Toast.makeText(getApplicationContext(), "Long click : Open Dialog to unpair the device", Toast.LENGTH_LONG).show();
+                Toast.makeText(getApplicationContext(), "Long click : Forget device", Toast.LENGTH_LONG).show();
                 String info = ((TextView) view).getText().toString();
                 Log.v(TAG, "device info = " + info + "\n");
                 //get the device address when click the device item
@@ -327,6 +402,7 @@ public class MainActivity extends AppCompatActivity {
         }
     };
 
+        /*
     public boolean connect(String address) {
         if (BA == null || address == null) {
             Log.e(TAG, "BluetoothAdapter not initialized or unspecified address.");
@@ -355,6 +431,7 @@ public class MainActivity extends AppCompatActivity {
         mBluetoothDeviceAddress = address;
         return true;
     }
+    */
 
     public boolean Pair(String address) {
         final BluetoothDevice device = BA.getRemoteDevice(address);
@@ -384,6 +461,24 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
+
+    public void sendMessage(String message) {
+        Log.d(TAG, "sendMessage...");
+        if (mChatService.getState() != BluetoothService.STATE_CONNECTED) {
+            Log.d(TAG, "Not able to send data Status = " + mChatService.getState());
+            Toast.makeText(this, "Connection was lost! ", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        if (message.length() > 0) {
+            Log.d(TAG, "Trying to send Data...");
+            byte[] send = message.getBytes();
+            mChatService.write(send);
+        }
+    }
+
+
+    /*
     public void disconnectGatt(BluetoothGatt gatt) {
         if(gatt != null) {
             gatt.close();
@@ -410,16 +505,16 @@ public class MainActivity extends AppCompatActivity {
                 public void onServicesDiscovered(BluetoothGatt gatt, int status) {
                     if (status == BluetoothGatt.GATT_SUCCESS) {
                         Log.i(TAG, "Send Data\n");
-                        /*
-                        BluetoothGattCharacteristic writeChar = mBluetoothGatt.getService(myServiceUUID)
-                                .getCharacteristic(myWriteCharUUID);
-                        byte[] data = new byte[10];
-                        writeChar.setValue(data);
-                        gatt.writeCharacteristic(writeChar);
-                        */
+
+                        //BluetoothGattCharacteristic writeChar = mBluetoothGatt.getService(myServiceUUID)
+                        //        .getCharacteristic(myWriteCharUUID);
+                        //byte[] data = new byte[10];
+                        //writeChar.setValue(data);
+                        //gatt.writeCharacteristic(writeChar);
+
                     }
                 }
-        };
+        }; */
 
 
 
@@ -445,4 +540,55 @@ public class MainActivity extends AppCompatActivity {
         return super.onOptionsItemSelected(item);
     }
 
+    @Override
+    public void onStart() {
+        super.onStart();
+        if (!BA.isEnabled()) {
+            Log.w(TAG, "On Start : Bluetooth Adapter is not enabled !");
+            Intent enableIntent = new Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE);
+            startActivityForResult(enableIntent, REQUEST_ENABLE_BLUETOOTH);
+        } else {
+            mChatService = new BluetoothService(this, mHandler);
+        }
+    }
+
+    @Override
+    public void onResume() {
+        super.onResume();
+
+        if (mChatService != null) {
+            Log.w(TAG, "On Resume : mChatService object is NULL Status : "+ mChatService.getState());
+            if (mChatService.getState() == BluetoothService.STATE_NONE) {
+                mChatService.start();
+            }
+        }
+    }
+
+    @Override
+    public void onDestroy() {
+        super.onDestroy();
+        if (mChatService != null)
+            mChatService.stop();
+    }
+
+    /*Code Related to messges */
+    private void findViewsByIdsMessages() {
+        msglistview = (ListView) findViewById(R.id.msglist);
+        inputLayout = (TextInputLayout) findViewById(R.id.input_layout);
+        View btnSend = findViewById(R.id.btn_send);
+
+        btnSend.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                Log.d(TAG, "Send button clicked");
+                if (inputLayout.getEditText().getText().toString().equals("")) {
+                    Toast.makeText(MainActivity.this, "Please input some texts", Toast.LENGTH_SHORT).show();
+                } else {
+                    //TODO: here
+                    sendMessage(inputLayout.getEditText().getText().toString());
+                    inputLayout.getEditText().setText("");
+                }
+            }
+        });
+    }
 }
