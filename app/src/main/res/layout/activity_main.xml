@@ -8,6 +8,14 @@
     tools:context=".MainActivity">
 
     <Button
+        android:id="@+id/testnokey"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginLeft="100dp"
+        android:layout_marginTop="15dp"
+        android:text="TestNoKey" />
+
+    <Button
         android:id="@+id/turnoff"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"

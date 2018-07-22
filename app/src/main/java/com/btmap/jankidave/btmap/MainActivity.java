@@ -62,7 +62,6 @@ public class MainActivity extends AppCompatActivity {
     private BluetoothGatt mBluetoothGatt;
     private String mBluetoothDeviceAddress;
     private IntentFilter filter2 = new IntentFilter();
-    private String disconnectBT;
     final ArrayList list = new ArrayList();
     private int mState;
 
@@ -70,6 +69,10 @@ public class MainActivity extends AppCompatActivity {
 
     private BluetoothService mChatService; //Member object for the chat services
     private String mConnectedDeviceName; //Name of the connected device
+    private String mConnectedDeviceAdd; //Address of the connected device
+
+    private ArrayList listDevices;
+    private ArrayAdapter adapter;
 
     /*Messages layout related defines */
     private TextInputLayout inputLayout;
@@ -169,6 +172,7 @@ public class MainActivity extends AppCompatActivity {
                         switch (msg.arg1) {
                             case BluetoothService.STATE_CONNECTED:
                                 Log.v(TAG, "BluetoothService.STATE_CONNECTED\n");
+                                listDevices.clear();
                                 break;
                             case BluetoothService.STATE_CONNECTING:
                                 Log.v(TAG, "BluetoothService.STATE_CONNECTING\n");
@@ -181,12 +185,28 @@ public class MainActivity extends AppCompatActivity {
                         }
                         break;
                     case Constants.MESSAGE_DEVICE_NAME:
-                        Log.v(TAG, "mHandler --> MESSAGE_DEVICE_NAME\n");
                         // save the connected device's name
                         mConnectedDeviceName = msg.getData().getString(Constants.DEVICE_NAME);
                         if (null != getApplicationContext()) {
                             Toast.makeText(getApplicationContext(), "Connected to "
                                     + mConnectedDeviceName, Toast.LENGTH_SHORT).show();
+                        }
+                        Log.v(TAG, "mHandler --> MESSAGE_DEVICE_NAME = \n" + mConnectedDeviceName);
+                        listDevices.add(mConnectedDeviceName);
+                        listItem.setText("Connected Device :");
+                        adapter.notifyDataSetChanged();
+                        break;
+                    case Constants.MESSAGE_DEVICE_ADDRESS:
+                        /* Temporary WA to start connect thread from client / Listen mode to establish two communication */
+                        //BA.getRemoteDevice(BA.getAddress(mConnectedDeviceName));
+                        mConnectedDeviceAdd = msg.getData().getString(Constants.DEVICE_ADDRESS);
+                        Log.v(TAG, "mHandler --> MESSAGE_DEVICE_ADDRESS = \n" + mConnectedDeviceAdd);
+                        if (mChatService != null && (mChatService.getState() != BluetoothService.STATE_CONNECTED)) {
+                            //  Log.v(TAG, "Start connectThread Class -->" + "\n");
+                            // Start the Bluetooth chat services - Not working ? Figure out how to fix this ?
+                            mChatService.connect(BA.getRemoteDevice(mConnectedDeviceAdd), false);
+                        } else {
+                            Log.v(TAG, "mChatService is NULL " + "\n");
                         }
                         break;
                     case Constants.MESSAGE_READ:
@@ -216,18 +236,18 @@ public class MainActivity extends AppCompatActivity {
     public void list(View v){
         pairedDevices = BA.getBondedDevices();
 
-        ArrayList list = new ArrayList();
-        list.clear();
+        listDevices = new ArrayList();
+        listDevices.clear();
         BA.cancelDiscovery();
         for(BluetoothDevice bt : pairedDevices) {
             //list.add(bt.getName());
             String devicename = bt.getName();
             String macAddress = bt.getAddress();
-            list.add(devicename+"\n"+macAddress);
+            listDevices.add(devicename+"\n"+macAddress);
         }
         Toast.makeText(getApplicationContext(), "Showing Paired Devices",Toast.LENGTH_SHORT).show();
 
-        final ArrayAdapter adapter = new  ArrayAdapter(this,android.R.layout.simple_list_item_1, list);
+        adapter = new  ArrayAdapter(this,android.R.layout.simple_list_item_1, listDevices);
 
         lv.setAdapter(adapter);
         listItem.setText("Paired Device :");
@@ -276,7 +296,6 @@ public class MainActivity extends AppCompatActivity {
                 return true;
             }
         });
-
 
     }
 
