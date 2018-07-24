@@ -13,6 +13,10 @@ import android.content.ClipData;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
+import android.hardware.Sensor;
+import android.hardware.SensorEvent;
+import android.hardware.SensorEventListener;
+import android.hardware.SensorManager;
 import android.os.Bundle;
 import android.os.Handler;
 import android.support.design.widget.FloatingActionButton;
@@ -51,9 +55,9 @@ import android.os.Message;
 
 import org.json.JSONException;
 
-public class MainActivity extends AppCompatActivity {
+public class MainActivity extends AppCompatActivity implements SensorEventListener {
 
-    Button b_on, b_off, b_list_devices, b_get_visible, start;
+    Button b_on, b_off, b_list_devices, b_get_visible, start, test_no_key;
     TextView listItem;
     BluetoothAdapter BA;
     private Set<BluetoothDevice>pairedDevices;
@@ -80,6 +84,23 @@ public class MainActivity extends AppCompatActivity {
     private ArrayList<String> chatMessages;
     private ListView msglistview;
 
+    /* Regarding Motion of the device */
+    private SensorManager sensorMan;
+    private Sensor accelerometer;
+
+    private float[] mGravity;
+    private double mAccel;
+    private double mAccelCurrent;
+    private double mAccelLast;
+
+    private boolean sensorRegistered = false;
+    private int hitCount = 0;
+    private double hitSum = 0;
+    private double hitResult = 0;
+
+    private final int SAMPLE_SIZE = 50; // change this sample size as you want, higher is more precise but slow measure.
+    private final double THRESHOLD = 0.2; // change this threshold as you want, higher is more spike movement
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -90,6 +111,7 @@ public class MainActivity extends AppCompatActivity {
         b_list_devices =(Button)findViewById(R.id.listD);
         b_get_visible =(Button)findViewById(R.id.visible);
         listItem =(TextView)findViewById(R.id.ListItem);
+        test_no_key =(Button) findViewById(R.id.testnokey);
 
         BA = BluetoothAdapter.getDefaultAdapter();
         lv = (ListView)findViewById(R.id.listView);
@@ -99,6 +121,7 @@ public class MainActivity extends AppCompatActivity {
         filter2.addAction(BA.ACTION_DISCOVERY_FINISHED);
         filter2.addAction(BA.ACTION_SCAN_MODE_CHANGED);
         filter2.addAction(BA.ACTION_SCAN_MODE_CHANGED);
+        filter2.addAction(BluetoothDevice.ACTION_PAIRING_REQUEST);
         registerReceiver(mReceiver, filter2);
 
         mChatService = new BluetoothService(this, mHandler);
@@ -129,6 +152,15 @@ public class MainActivity extends AppCompatActivity {
             }
         });
 
+        /*Testing pairing without key or user permissions */
+        test_no_key.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                Log.v(TAG, "Test pairing without use permission\n");
+
+            }
+        });
+
         /* Asking permission at runtime */
         int MY_PERMISSIONS_REQUEST_ACCESS_COARSE_LOCATION = 1;
         ActivityCompat.requestPermissions(this,
@@ -137,6 +169,19 @@ public class MainActivity extends AppCompatActivity {
         ActivityCompat.requestPermissions(this,
                 new String[]{Manifest.permission.ACCESS_FINE_LOCATION},
                 MY_PERMISSIONS_REQUEST_ACCESS_COARSE_LOCATION);
+
+        /* Regarding Motion of the device  - TODO : Need to review and understand properly */
+
+        sensorMan = (SensorManager) this.getSystemService(Context.SENSOR_SERVICE);
+        accelerometer = sensorMan.getDefaultSensor(Sensor.TYPE_ACCELEROMETER);
+        mAccel = 0.00f;
+        mAccelCurrent = SensorManager.GRAVITY_EARTH;
+        mAccelLast = SensorManager.GRAVITY_EARTH;
+
+        sensorMan.registerListener(this, accelerometer,
+                SensorManager.SENSOR_DELAY_NORMAL);
+        sensorRegistered = true;
+
 
     }
 
@@ -417,6 +462,21 @@ public class MainActivity extends AppCompatActivity {
             {
                 Log.i("SCAN_MODE_NONE", "The device isn't in discoverable mode and cannot receive connections");
                 Toast.makeText(getApplicationContext(), "The device isn't in discoverable mode and cannot receive connections",Toast.LENGTH_LONG).show();
+            } else if (BluetoothDevice.ACTION_PAIRING_REQUEST.equals(action)) {
+                Log.i("ACTION_PAIRING_REQUEST", "Begin Automatic pairing");
+                /* If we need Automatic pairing - convert this to system app
+                try {
+                    BluetoothDevice bluetoothDevice = intent.getParcelableExtra(BluetoothDevice.EXTRA_DEVICE);
+                    bluetoothDevice.setPin(Constants.BLE_AUTO_PIN.getBytes());
+                    Log.e(TAG,"Auto-entering pin: " + Constants.BLE_AUTO_PIN);
+                    //setPairing confirmation if neeeded
+                    bluetoothDevice.setPairingConfirmation(true);
+                    Log.e(TAG,"pin entered and request sent...");
+                } catch (Exception e) {
+                    Log.e(TAG, "Error occurs when trying to auto pair");
+                    e.printStackTrace();
+                }
+                */
             }
         }
     };
@@ -496,7 +556,6 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
-
     /*
     public void disconnectGatt(BluetoothGatt gatt) {
         if(gatt != null) {
@@ -535,6 +594,54 @@ public class MainActivity extends AppCompatActivity {
                 }
         }; */
 
+
+    @Override
+    public void onSensorChanged(SensorEvent event) {
+        if (event.sensor.getType() == Sensor.TYPE_ACCELEROMETER) {
+            /* Below code is copied from ->
+             * https://stackoverflow.com/questions/14574879/how-to-detect-movement-of-an-android-device
+             *
+             */
+            mGravity = event.values.clone();
+            // Shake detection
+            double x = mGravity[0];
+            double y = mGravity[1];
+            double z = mGravity[2];
+            mAccelLast = mAccelCurrent;
+            mAccelCurrent = Math.sqrt(x * x + y * y + z * z);
+            double delta = mAccelCurrent - mAccelLast;
+            mAccel = mAccel * 0.9f + delta;
+
+            if (hitCount <= SAMPLE_SIZE) {
+                hitCount++;
+                hitSum += Math.abs(mAccel);
+            } else {
+                hitResult = hitSum / SAMPLE_SIZE;
+
+                Log.d(TAG, String.valueOf(hitResult));
+
+                if (hitResult > THRESHOLD) {
+                    Log.d(TAG, "Walking");
+                    if (mChatService.getState() == BluetoothService.STATE_CONNECTED) {
+                        Log.d(TAG, "Trying to send Data while walking...");
+                        sendMessage("Connected device is walking");
+                    }
+                } else {
+                    Log.d(TAG, "Stop Walking");
+                }
+
+                hitCount = 0;
+                hitSum = 0;
+                hitResult = 0;
+            }
+        }
+    }
+
+    @Override
+    public void onAccuracyChanged(Sensor sensor, int accuracy) {
+        // TODO Auto-generated method stub
+
+    }
 
 
     @Override

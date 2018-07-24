@@ -176,6 +176,8 @@ public class BluetoothService {
         synchronized (this) {
             if (mState != STATE_CONNECTED)  {
                 Log.d(TAG, "Status = "+ mState);
+
+                
                 return;
             }
             r = mConnectedThread;
