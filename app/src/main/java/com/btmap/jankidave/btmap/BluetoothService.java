@@ -16,6 +16,8 @@ import java.util.UUID;
 //import java.util.logging.Handler;
 import android.os.Handler;
 
+import com.btmap.jankidave.blechat.MainActivity;
+
 public class BluetoothService {
 
     private AcceptThread msecureAcceptThread;
@@ -27,7 +29,7 @@ public class BluetoothService {
     public static final int STATE_LISTEN = 1;     // now listening for incoming connections
     public static final int STATE_CONNECTING = 2; // now initiating an outgoing connection
     public static final int STATE_CONNECTED = 3;  // now connected to a remote device
-    private static final String TAG = "MainActivity";
+    private static final String TAG = "BLEMainActivityNew";
 
 
     private final Handler mHandler;
@@ -177,7 +179,7 @@ public class BluetoothService {
             if (mState != STATE_CONNECTED)  {
                 Log.d(TAG, "Status = "+ mState);
 
-                
+
                 return;
             }
             r = mConnectedThread;

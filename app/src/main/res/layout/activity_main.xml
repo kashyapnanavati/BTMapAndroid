@@ -5,7 +5,7 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:visibility="visible"
-    tools:context=".MainActivity">
+    tools:context="com.btmap.jankidave.blechat.MainActivity">
 
     <Button
         android:id="@+id/testnokey"
@@ -97,7 +97,7 @@
         android:layout_marginTop="210dp"
         android:text=""
         android:textColor="?attr/colorPrimary"
-        android:textSize="@dimen/fab_margin" />
+        android:textSize="10sp" />
 
     <ImageButton
         android:id="@+id/imageButton"

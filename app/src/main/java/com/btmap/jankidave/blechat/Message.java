@@ -1,4 +1,4 @@
-package com.btmap.jankidave.btmap;
+package com.btmap.jankidave.blechat;
 
 import android.app.Activity;
 import android.bluetooth.BluetoothAdapter;
@@ -9,6 +9,8 @@ import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.util.Log;
 import android.widget.Toast;
+
+import com.btmap.jankidave.btmap.BluetoothService;
 
 public class Message extends AppCompatActivity {
 
