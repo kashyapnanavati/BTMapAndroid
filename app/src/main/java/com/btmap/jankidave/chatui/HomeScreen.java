@@ -1,4 +1,4 @@
-package com.btmap.jankidave.blechat;
+package com.btmap.jankidave.chatui;
 
 import android.content.Intent;
 import android.support.v7.app.AppCompatActivity;
@@ -6,9 +6,6 @@ import android.os.Bundle;
 import android.util.Log;
 import android.view.View;
 import android.widget.Button;
-
-import com.btmap.jankidave.blechat.BLEMainActivityNew;
-import com.btmap.jankidave.blechat.MainActivity;
 
 /**
  * An example full-screen activity that shows and hides the system UI (i.e.

@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.btmap.jankidave.blechat;
+package com.btmap.jankidave.chatui;
 
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
@@ -89,7 +89,7 @@ public class BluetoothChatService {
         mState = state;
 
         // Give the new state to the Handler so the UI Activity can update
-        mHandler.obtainMessage(com.btmap.jankidave.blechat.Constants.MESSAGE_STATE_CHANGE, state, -1).sendToTarget();
+        mHandler.obtainMessage(com.btmap.jankidave.chatui.Constants.MESSAGE_STATE_CHANGE, state, -1).sendToTarget();
     }
 
     /**
@@ -170,7 +170,7 @@ public class BluetoothChatService {
      * @param device The BluetoothDevice that has been connected
      */
     public synchronized void connected(BluetoothSocket socket, BluetoothDevice
-            device, final String socketType, com.btmap.jankidave.blechat.Constants.ROLE role) {
+            device, final String socketType, com.btmap.jankidave.chatui.Constants.ROLE role) {
         Log.d(TAG, "connected, Socket Type:" + socketType);
 
         // Cancel the thread that completed the connection
@@ -200,9 +200,9 @@ public class BluetoothChatService {
         mConnectedThread.start();
 
         // Send the name of the connected device back to the UI Activity
-        Message msg = mHandler.obtainMessage(com.btmap.jankidave.blechat.Constants.MESSAGE_DEVICE_NAME);
+        Message msg = mHandler.obtainMessage(com.btmap.jankidave.chatui.Constants.MESSAGE_DEVICE_NAME);
         Bundle bundle = new Bundle();
-        bundle.putString(com.btmap.jankidave.blechat.Constants.DEVICE_NAME, device.getName());
+        bundle.putString(com.btmap.jankidave.chatui.Constants.DEVICE_NAME, device.getName());
         msg.setData(bundle);
         mHandler.sendMessage(msg);
 
@@ -266,9 +266,9 @@ public class BluetoothChatService {
      */
     private void connectionFailed() {
         // Send a failure message back to the Activity
-        Message msg = mHandler.obtainMessage(com.btmap.jankidave.blechat.Constants.MESSAGE_TOAST);
+        Message msg = mHandler.obtainMessage(com.btmap.jankidave.chatui.Constants.MESSAGE_TOAST);
         Bundle bundle = new Bundle();
-        bundle.putString(com.btmap.jankidave.blechat.Constants.TOAST, "Unable to connect device");
+        bundle.putString(com.btmap.jankidave.chatui.Constants.TOAST, "Unable to connect device");
         msg.setData(bundle);
         mHandler.sendMessage(msg);
 
@@ -281,9 +281,9 @@ public class BluetoothChatService {
      */
     private void connectionLost() {
         // Send a failure message back to the Activity
-        Message msg = mHandler.obtainMessage(com.btmap.jankidave.blechat.Constants.MESSAGE_TOAST);
+        Message msg = mHandler.obtainMessage(com.btmap.jankidave.chatui.Constants.MESSAGE_TOAST);
         Bundle bundle = new Bundle();
-        bundle.putString(com.btmap.jankidave.blechat.Constants.TOAST, "Device connection was lost");
+        bundle.putString(com.btmap.jankidave.chatui.Constants.TOAST, "Device connection was lost");
         msg.setData(bundle);
         mHandler.sendMessage(msg);
 
@@ -293,9 +293,9 @@ public class BluetoothChatService {
 
 
     private void reconnect(){
-        Message msg = mHandler.obtainMessage(com.btmap.jankidave.blechat.Constants.MESSAGE_TOAST);
+        Message msg = mHandler.obtainMessage(com.btmap.jankidave.chatui.Constants.MESSAGE_TOAST);
         Bundle bundle = new Bundle();
-        bundle.putString(com.btmap.jankidave.blechat.Constants.TOAST, "Trying to reconnect...");
+        bundle.putString(com.btmap.jankidave.chatui.Constants.TOAST, "Trying to reconnect...");
         msg.setData(bundle);
         mHandler.sendMessage(msg);
 
@@ -356,7 +356,7 @@ public class BluetoothChatService {
                             case STATE_CONNECTING:
                                 // Situation normal. Start the connected thread.
                                 connected(socket, socket.getRemoteDevice(),
-                                        mSocketType, com.btmap.jankidave.blechat.Constants.ROLE.SERVER);
+                                        mSocketType, com.btmap.jankidave.chatui.Constants.ROLE.SERVER);
                                 break;
                             case STATE_NONE:
                             case STATE_CONNECTED:
@@ -447,7 +447,7 @@ public class BluetoothChatService {
             }
 
             // Start the connected thread
-            connected(mmSocket, mmDevice, mSocketType, com.btmap.jankidave.blechat.Constants.ROLE.CLIENT);
+            connected(mmSocket, mmDevice, mSocketType, com.btmap.jankidave.chatui.Constants.ROLE.CLIENT);
         }
 
         public void cancel() {
@@ -498,7 +498,7 @@ public class BluetoothChatService {
                     bytes = mmInStream.read(buffer);
 
                     // Send the obtained bytes to the UI Activity
-                    mHandler.obtainMessage(com.btmap.jankidave.blechat.Constants.MESSAGE_READ, bytes, -1, buffer)
+                    mHandler.obtainMessage(com.btmap.jankidave.chatui.Constants.MESSAGE_READ, bytes, -1, buffer)
                             .sendToTarget();
                 } catch (IOException e) {
                     Log.e(TAG, "disconnected", e);

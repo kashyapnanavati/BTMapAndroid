@@ -1,11 +1,7 @@
-package com.btmap.jankidave.blechat;
+package com.btmap.jankidave.chatui;
 
-import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
-import android.content.BroadcastReceiver;
-import android.content.Context;
 import android.content.Intent;
-import android.content.IntentFilter;
 import android.os.Bundle;
 import android.app.Activity;
 import android.view.KeyEvent;

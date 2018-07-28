@@ -32,6 +32,8 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Random;
+import java.util.Timer;
+import java.util.TimerTask;
 import java.util.UUID;
 import java.util.concurrent.RunnableFuture;
 import java.util.regex.Pattern;
@@ -230,8 +232,20 @@ public class BLECentralHelper {
             if(status == BluetoothGatt.GATT_SUCCESS) {
                 if (newState == BluetoothProfile.STATE_CONNECTED) {
                     /* KP Testing for readremoteRSSI */
+                    /*
                     boolean rssiStatus = gatt.readRemoteRssi();
                     Log.i(TAG, "rssiStatus in Connection State change =" + rssiStatus);
+                    */
+                    TimerTask task = new TimerTask()
+                    {
+                        @Override
+                        public void run()
+                        {
+                            mConnectedGatt.readRemoteRssi();
+                        }
+                    };
+                    Timer rssiTimer = new Timer();
+                    rssiTimer.schedule(task, 1000, 1000);
                     gatt.discoverServices();
                 } else if (newState == BluetoothProfile.STATE_DISCONNECTED) {
                     mHandler.post(new Runnable() {
@@ -402,13 +416,7 @@ public class BLECentralHelper {
     }; //End BluetoothGattCallback
 
     public void send(byte[] data) {
-        /*Temp WA to trigger readRemote RSSI */
-        //String msg = Arrays.toString(data);
         Log.i(TAG, "BluetoothGaTT send message =" + data);
-        if (data[0] == '#' && data[1] == '#') {
-            Log.i(TAG, "ReadRemote RSSI and send");
-            boolean wa = mConnectedGatt.readRemoteRssi();
-        } else {
             //boolean wa = mConnectedGatt.readRemoteRssi();
             final BluetoothGattCharacteristic characteristic = mConnectedGatt
                     .getService(BLEChatProfile.SERVICE_UUID)
@@ -419,7 +427,6 @@ public class BLECentralHelper {
             if (!mConnectedGatt.writeCharacteristic(characteristic)) {
                 mBleChatEvents.onConnectionError("Couldn't send data!!");
             }
-        }
     }
 
     public void send(String msg){

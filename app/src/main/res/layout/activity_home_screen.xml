@@ -5,7 +5,7 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="@android:color/black"
-    tools:context="com.btmap.jankidave.blechat.HomeScreen">
+    tools:context="com.btmap.jankidave.chatui.HomeScreen">
 
     <!-- The primary full-screen view. This can be replaced with whatever view
          is needed to present your content, e.g. VideoView, SurfaceView,
@@ -46,19 +46,19 @@
         android:id="@+id/connect"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginLeft="125dp"
+        android:layout_marginLeft="110dp"
         android:layout_marginTop="200dp"
         android:textSize="20sp"
-        android:text="Connect" />
+        android:text="BC Connect" />
 
     <Button
         android:id="@+id/bleconnect"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginLeft="125dp"
-        android:layout_marginTop="400dp"
-        android:textSize="20sp"
-        android:text="BLEConnect" />
+        android:layout_marginLeft="105dp"
+        android:layout_marginTop="250dp"
+        android:text="BLE Connect"
+        android:textSize="20sp" />
 
     <!-- This FrameLayout insets its children based on system windows using
          android:fitsSystemWindows. -->

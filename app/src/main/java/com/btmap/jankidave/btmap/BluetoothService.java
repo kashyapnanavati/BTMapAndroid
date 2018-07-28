@@ -16,7 +16,7 @@ import java.util.UUID;
 //import java.util.logging.Handler;
 import android.os.Handler;
 
-import com.btmap.jankidave.blechat.MainActivity;
+import com.btmap.jankidave.chatui.MainActivity;
 
 public class BluetoothService {
 

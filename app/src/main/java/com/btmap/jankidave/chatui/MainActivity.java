@@ -1,4 +1,4 @@
-package com.btmap.jankidave.blechat;
+package com.btmap.jankidave.chatui;
 
 import android.Manifest;
 import android.bluetooth.BluetoothAdapter;

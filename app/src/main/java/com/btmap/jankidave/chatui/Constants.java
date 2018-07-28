@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.btmap.jankidave.blechat;
+package com.btmap.jankidave.chatui;
 
 /**
  * Defines several constants used between {@link BluetoothChatService} and the UI.
@@ -37,4 +37,7 @@ public interface Constants {
         SERVER,
         CLIENT
     }
+
+    /* Using this special string to track device motion and then send RSSI to conected device */
+    public static final String myPatternToFetchRSSI = "##";
 }

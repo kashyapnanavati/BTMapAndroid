@@ -18,7 +18,11 @@
     <!--  BluetoothChat -->
     <string name="send">Send</string>
     <string name="not_connected">You are not connected to a device</string>
-    <string name="bt_not_enabled_leaving">Bluetooth was not enabled. Leaving Bluetooth Chat.</string>
+    <string name="location_not_enabled_leaving">Location was not enabled. Leaving BTMap.</string>
+    <string name="gps_not_enabled">Location is not enabled.</string>
+    <string name="open_location_settings">Open Location Settings</string>
+    <string name="Cancel">Cancel</string>
+    <string name="bt_not_enabled_leaving">Bluetooth was not enabled. Leaving BTMap.</string>
     <string name="title_connecting">connecting...</string>
     <string name="title_connected_to">connected to <xliff:g id="device_name">%1$s</xliff:g></string>
     <string name="title_not_connected">not connected</string>

@@ -14,10 +14,9 @@
  * limitations under the License.
  */
 
-package com.btmap.jankidave.blechat;
+package com.btmap.jankidave.chatui;
 
 import android.app.Activity;
-import android.support.v4.app.Fragment;
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
 import android.content.BroadcastReceiver;

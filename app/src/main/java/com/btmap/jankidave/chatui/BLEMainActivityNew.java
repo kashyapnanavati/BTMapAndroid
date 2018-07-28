@@ -15,7 +15,7 @@
 */
 
 
-package com.btmap.jankidave.blechat;
+package com.btmap.jankidave.chatui;
 
 import android.os.Bundle;
 import android.support.v4.app.FragmentTransaction;

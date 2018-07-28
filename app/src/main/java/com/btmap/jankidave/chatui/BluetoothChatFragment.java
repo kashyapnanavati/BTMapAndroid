@@ -14,19 +14,23 @@
  * limitations under the License.
  */
 
-package com.btmap.jankidave.blechat;
+package com.btmap.jankidave.chatui;
 
 import android.app.ActionBar;
 import android.app.Activity;
+import android.app.AlertDialog;
 import android.app.ProgressDialog;
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
 import android.content.Context;
+import android.content.DialogInterface;
 import android.content.Intent;
 import android.hardware.Sensor;
 import android.hardware.SensorEvent;
 import android.hardware.SensorEventListener;
 import android.hardware.SensorManager;
+import android.location.Location;
+import android.location.LocationManager;
 import android.net.Uri;
 import android.os.Bundle;
 import android.os.Environment;
@@ -49,6 +53,7 @@ import android.widget.EditText;
 import android.widget.ListView;
 import android.widget.TextView;
 import android.widget.Toast;
+import android.provider.Settings;
 
 import com.btmap.jankidave.blemap.BLECentralHelper;
 import com.btmap.jankidave.blemap.BLECentralChatEvents;
@@ -56,7 +61,6 @@ import com.btmap.jankidave.blemap.BLEChatEvents;
 import com.btmap.jankidave.blemap.BLEMode;
 import com.btmap.jankidave.blemap.BLEPeripheralChatEvents;
 import com.btmap.jankidave.blemap.BLEPeripheralHelper;
-import com.btmap.jankidave.btmap.BluetoothService;
 import com.btmap.jankidave.common.logger.Log;
 
 import java.io.BufferedOutputStream;
@@ -69,7 +73,7 @@ import java.util.concurrent.Semaphore;
 /**
  * This fragment controls Bluetooth to communicate with other devices.
  */
-public class BluetoothChatFragment extends Fragment implements SensorEventListener {
+public class BluetoothChatFragment extends Fragment {
 
     private static final String TAG = "BluetoothChatFragment";
     private BLEMode mBleMode = BLEMode.CENTRAL;
@@ -78,6 +82,7 @@ public class BluetoothChatFragment extends Fragment implements SensorEventListen
     private static final int REQUEST_CONNECT_DEVICE_SECURE = 1;
     private static final int REQUEST_CONNECT_DEVICE_INSECURE = 2;
     private static final int REQUEST_ENABLE_BT = 3;
+    private static final int REQUEST_ENABLE_LOCATION = 4;
     private static final int BLE_REQUEST_CONNECT_DEVICE = 11;
     private static final int BLE_REQUEST_DEVICE_CONNECTING = 12;
     private static final int PICK_IMAGE = 21;
@@ -86,6 +91,9 @@ public class BluetoothChatFragment extends Fragment implements SensorEventListen
     private ListView mConversationView;
     private EditText mOutEditText;
     private Button mSendButton;
+
+    /* Check if Device Location is on or not and ask user for permission */
+    LocationManager lm;
 
     /* ----------- Regarding Motion of the device START -------------------- */
     private SensorManager sensorMan;
@@ -163,28 +171,44 @@ public class BluetoothChatFragment extends Fragment implements SensorEventListen
 
         setupProgressBar(getContext());
 
-        /* Regarding Motion of the device  - TODO : Need to review and understand properly */
-
+        /* Get Context */
         context = getActivity().getApplicationContext();
-        sensorMan = (SensorManager) context.getSystemService(Context.SENSOR_SERVICE);
-        accelerometer = sensorMan.getDefaultSensor(Sensor.TYPE_ACCELEROMETER);
-        mAccel = 0.00f;
-        mAccelCurrent = SensorManager.GRAVITY_EARTH;
-        mAccelLast = SensorManager.GRAVITY_EARTH;
-
-        sensorMan.registerListener(this, accelerometer,
-                SensorManager.SENSOR_DELAY_NORMAL);
-        sensorRegistered = true;
-
     }
 
     @Override
     public void onStart() {
         super.onStart();
         Log.d(TAG, "onStart called\n");
+
+        lm = (LocationManager) context.getSystemService(Context.LOCATION_SERVICE);
+        if (!lm.isProviderEnabled(LocationManager.GPS_PROVIDER)) {
+            /* Ask User to turn on Location */
+            //Intent enableIntentLoc = new Intent(Settings.ACTION_LOCATION_SOURCE_SETTINGS);
+            //startActivityForResult(enableIntentLoc, REQUEST_ENABLE_LOCATION);
+            AlertDialog.Builder dialog = new AlertDialog.Builder(getActivity());
+            dialog.setMessage(getResources().getString(R.string.gps_not_enabled));
+            dialog.setPositiveButton(getResources().getString(R.string.open_location_settings), new DialogInterface.OnClickListener() {
+                @Override
+                public void onClick(DialogInterface paramDialogInterface, int paramInt) {
+                    Intent myIntent = new Intent( Settings.ACTION_LOCATION_SOURCE_SETTINGS);
+                    startActivityForResult(myIntent, REQUEST_ENABLE_LOCATION);
+                }
+            });
+            dialog.setNegativeButton(getString(R.string.Cancel), new DialogInterface.OnClickListener() {
+
+                @Override
+                public void onClick(DialogInterface paramDialogInterface, int paramInt) {
+                    // TODO Auto-generated method stub
+
+                }
+            });
+
+            dialog.show();
+        }
         // If BT is not on, request that it be enabled.
         // setupChat() will then be called during onActivityResult
         if (!mBluetoothAdapter.isEnabled()) {
+            /* Ask User to turn on Bluetooth */
             Intent enableIntent = new Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE);
             startActivityForResult(enableIntent, REQUEST_ENABLE_BT);
             // Otherwise, setup the chat session
@@ -294,6 +318,7 @@ public class BluetoothChatFragment extends Fragment implements SensorEventListen
                 return;
             }
         }
+
         sendMessage(message);
     }
 
@@ -417,8 +442,9 @@ public class BluetoothChatFragment extends Fragment implements SensorEventListen
     }
 
     private void showOutgoingMessage(String msg){
-        mHandler.obtainMessage(Constants.MESSAGE_WRITE, -1, -1, msg.getBytes())
-                .sendToTarget();
+            Log.i(TAG, "showOutgoingMessage");
+            mHandler.obtainMessage(Constants.MESSAGE_WRITE, -1, -1, msg.getBytes())
+                    .sendToTarget();
     }
 
     private void showRssiChanged(String msg){
@@ -452,7 +478,9 @@ public class BluetoothChatFragment extends Fragment implements SensorEventListen
     private void setState(int newState){
         switch (newState) {
             case BluetoothChatService.STATE_CONNECTED:
-                setStatus(getString(R.string.title_connected_to, mConnectedDeviceName));
+                //setStatus(getString(R.string.title_connected_to, mConnectedDeviceName));
+                String cs = getResources().getString(R.string.title_connected_to);
+                setStatus(cs + mConnectedDeviceName);
                 //mConversationArrayAdapter.clear();
                 break;
             case BluetoothChatService.STATE_CONNECTING:
@@ -543,6 +571,19 @@ public class BluetoothChatFragment extends Fragment implements SensorEventListen
                     getActivity().finish();
                 }
                 break;
+            case REQUEST_ENABLE_LOCATION:
+                // When the request to enable Bluetooth returns
+                lm = (LocationManager) context.getSystemService(Context.LOCATION_SERVICE);
+                if (lm.isProviderEnabled(LocationManager.GPS_PROVIDER)) {
+                    // Location is now enabled, do nothing wait for BT to be enabled
+                } else {
+                    // User did not enable Location or an error occurred
+                    Log.d(TAG, "Location not enabled");
+                    Toast.makeText(getActivity(), R.string.location_not_enabled_leaving,
+                            Toast.LENGTH_SHORT).show();
+                    getActivity().finish();
+                }
+                break;
             case BLE_REQUEST_CONNECT_DEVICE:
                 if( resultCode == Activity.RESULT_OK) {
                     connectBleDevice(data);
@@ -585,6 +626,7 @@ public class BluetoothChatFragment extends Fragment implements SensorEventListen
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
         switch (item.getItemId()) {
+            /* Disable Bluetooth Classic related code
             case R.id.secure_connect_scan: {
                 if(mChatService != null)
                     mChatService.start();
@@ -601,6 +643,7 @@ public class BluetoothChatFragment extends Fragment implements SensorEventListen
                 startActivityForResult(serverIntent, REQUEST_CONNECT_DEVICE_INSECURE);
                 return true;
             }
+            */
             case R.id.discoverable: {
                 // Ensure this device is discoverable by others
                 ensureDiscoverable();
@@ -831,7 +874,7 @@ public class BluetoothChatFragment extends Fragment implements SensorEventListen
                     public void run() {
                         sendMessage("RSSI=" + Integer.toString(RSSI));
                     }
-                }, 3000);
+                }, 1000);
             }
         }
     };
@@ -962,6 +1005,7 @@ public class BluetoothChatFragment extends Fragment implements SensorEventListen
     };
 
     private void processIncomingMsg(String msg){
+        /*If Part is obsolete code */
         if(msg.startsWith("/")){
             String[] tokens = msg.split(" ", 2);
             if(tokens[0].compareTo("/name") == 0){
@@ -970,7 +1014,8 @@ public class BluetoothChatFragment extends Fragment implements SensorEventListen
                 transferData();
             }
         }else{
-            showIncomingMessage(msg);
+                Log.i(TAG, "--- processIncomingMsg ---");
+                showIncomingMessage(msg);
         }
     }
 
@@ -1110,52 +1155,6 @@ public class BluetoothChatFragment extends Fragment implements SensorEventListen
 
         public void end(){
             mEnd = true;
-        }
-    }
-
-    @Override
-    public void onAccuracyChanged(Sensor sensor, int accuracy) {
-        // TODO Auto-generated method stub
-
-    }
-
-    @Override
-    public void onSensorChanged(SensorEvent event) {
-        if (event.sensor.getType() == Sensor.TYPE_ACCELEROMETER) {
-            /* Below code is copied from ->
-             * https://stackoverflow.com/questions/14574879/how-to-detect-movement-of-an-android-device
-             *
-             */
-            mGravity = event.values.clone();
-            // Shake detection
-            double x = mGravity[0];
-            double y = mGravity[1];
-            double z = mGravity[2];
-            mAccelLast = mAccelCurrent;
-            mAccelCurrent = Math.sqrt(x * x + y * y + z * z);
-            double delta = mAccelCurrent - mAccelLast;
-            mAccel = mAccel * 0.9f + delta;
-
-            if (hitCount <= SAMPLE_SIZE) {
-                hitCount++;
-                hitSum += Math.abs(mAccel);
-            } else {
-                hitResult = hitSum / SAMPLE_SIZE;
-
-                android.util.Log.d(TAG, String.valueOf(hitResult));
-
-                if (hitResult > THRESHOLD) {
-                    android.util.Log.d(TAG, "Walking");
-                    android.util.Log.d(TAG, "Trying to send Data while walking...");
-                        sendMessage("##");
-                } else {
-                    android.util.Log.d(TAG, "Stop Walking");
-                }
-
-                hitCount = 0;
-                hitSum = 0;
-                hitResult = 0;
-            }
         }
     }
 }

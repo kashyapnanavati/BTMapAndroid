@@ -5,7 +5,7 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:visibility="visible"
-    tools:context="com.btmap.jankidave.blechat.MainActivity">
+    tools:context="com.btmap.jankidave.chatui.MainActivity">
 
     <Button
         android:id="@+id/testnokey"
