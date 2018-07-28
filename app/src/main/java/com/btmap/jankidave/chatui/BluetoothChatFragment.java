@@ -16,6 +16,7 @@
 
 package com.btmap.jankidave.chatui;
 
+import android.Manifest;
 import android.app.ActionBar;
 import android.app.Activity;
 import android.app.AlertDialog;
@@ -25,6 +26,7 @@ import android.bluetooth.BluetoothDevice;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
+import android.content.pm.PackageManager;
 import android.hardware.Sensor;
 import android.hardware.SensorEvent;
 import android.hardware.SensorEventListener;
@@ -95,24 +97,6 @@ public class BluetoothChatFragment extends Fragment {
     /* Check if Device Location is on or not and ask user for permission */
     LocationManager lm;
 
-    /* ----------- Regarding Motion of the device START -------------------- */
-    private SensorManager sensorMan;
-    private Sensor accelerometer;
-
-    private float[] mGravity;
-    private double mAccel;
-    private double mAccelCurrent;
-    private double mAccelLast;
-
-    private boolean sensorRegistered = false;
-    private int hitCount = 0;
-    private double hitSum = 0;
-    private double hitResult = 0;
-
-    private final int SAMPLE_SIZE = 50; // change this sample size as you want, higher is more precise but slow measure.
-    private final double THRESHOLD = 0.2; // change this threshold as you want, higher is more spike movement
-    /* ----------- Regarding Motion of the device End -------------------- */
-
     /**
      * Name of the connected device
      */
@@ -179,12 +163,9 @@ public class BluetoothChatFragment extends Fragment {
     public void onStart() {
         super.onStart();
         Log.d(TAG, "onStart called\n");
-
         lm = (LocationManager) context.getSystemService(Context.LOCATION_SERVICE);
         if (!lm.isProviderEnabled(LocationManager.GPS_PROVIDER)) {
-            /* Ask User to turn on Location */
-            //Intent enableIntentLoc = new Intent(Settings.ACTION_LOCATION_SOURCE_SETTINGS);
-            //startActivityForResult(enableIntentLoc, REQUEST_ENABLE_LOCATION);
+            // Ask User to turn on Location
             AlertDialog.Builder dialog = new AlertDialog.Builder(getActivity());
             dialog.setMessage(getResources().getString(R.string.gps_not_enabled));
             dialog.setPositiveButton(getResources().getString(R.string.open_location_settings), new DialogInterface.OnClickListener() {
@@ -199,12 +180,19 @@ public class BluetoothChatFragment extends Fragment {
                 @Override
                 public void onClick(DialogInterface paramDialogInterface, int paramInt) {
                     // TODO Auto-generated method stub
+                    // User did not enable Bluetooth or an error occurred
+                    Log.e(TAG, "Location not enabled");
+                    Toast.makeText(getActivity(), R.string.gps_not_enabled,
+                            Toast.LENGTH_SHORT).show();
+                    getActivity().finish();
 
                 }
             });
 
             dialog.show();
         }
+
+
         // If BT is not on, request that it be enabled.
         // setupChat() will then be called during onActivityResult
         if (!mBluetoothAdapter.isEnabled()) {
@@ -216,6 +204,33 @@ public class BluetoothChatFragment extends Fragment {
             setupChat();
         }
     }
+
+    /*
+    @Override
+    public void onRequestPermissionsResult(int requestCode,
+                                           String permissions[], int[] grantResults) {
+        switch (requestCode) {
+            case REQUEST_CODE_FINE_LOCATION: {
+                // If request is cancelled, the result arrays are empty.
+                if (grantResults.length > 0
+                        && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+                    Log.i(TAG, "COARSE_LOCATION permission is granted\n");
+                    // permission was granted, yay! Do the
+                    // contacts-related task you need to do.
+                } else {
+                    // permission denied, boo! Disable the
+                    // functionality that depends on this permission.
+                    Log.d(TAG, "LOCATION not enabled");
+                    Toast.makeText(getActivity(), R.string.gps_not_enabled,
+                            Toast.LENGTH_SHORT).show();
+                    getActivity().finish();
+                }
+            }
+                return;
+
+        }
+    }
+    */
 
     @Override
     public void onDestroy() {
@@ -381,6 +396,7 @@ public class BluetoothChatFragment extends Fragment {
      */
     private void setStatus(int resId) {
         FragmentActivity activity = getActivity();
+        final int lint = resId;
         if (null == activity) {
             return;
         }
@@ -388,7 +404,18 @@ public class BluetoothChatFragment extends Fragment {
         if (null == actionBar) {
             return;
         }
-        actionBar.setSubtitle(resId);
+        /* Bug Fix for Issue :
+         * android.view.ViewRootImpl$CalledFromWrongThreadException: Only the original thread that created a view hierarchy can touch its views.
+         */
+        getActivity().runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+
+                //stuff that updates ui
+                actionBar.setSubtitle(lint);
+            }
+        });
+        //actionBar.setSubtitle(resId);
     }
 
     /**
@@ -502,6 +529,7 @@ public class BluetoothChatFragment extends Fragment {
             FragmentActivity activity = getActivity();
             switch (msg.what) {
                 case Constants.MESSAGE_STATE_CHANGE:
+                    Log.i(TAG, "Event for MESSAGE_STATE_CHANGE");
                     setState(msg.arg1);
                     break;
                 case Constants.MESSAGE_WRITE:
