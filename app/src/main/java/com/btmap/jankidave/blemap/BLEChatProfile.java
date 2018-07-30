@@ -23,7 +23,7 @@ public class BLEChatProfile {
 
 
     private static String mVersion = "1";
-    private static String mDescription = "BLEChat - Juan Gomez :_AtilA_";
+    private static String mDescription = "BLEChat";
 
     /**
      *  For Logging purposes only

@@ -5,6 +5,7 @@ import android.bluetooth.BluetoothDevice;
 import android.content.Intent;
 import android.os.Bundle;
 import android.support.v4.app.FragmentActivity;
+import android.util.Log;
 import android.view.KeyEvent;
 import android.webkit.WebView;
 import android.widget.TextView;
@@ -15,6 +16,7 @@ import com.btmap.jankidave.blemap.BLEPeripheralHelper;
 public class BLEAdvertisingActivity extends FragmentActivity {
 
     public static String EXTRA_CLIENT_NAME = "ble_client_name";
+    private static final String TAG = "BLEAdvertisingActivity";
 
     BLEPeripheralHelper mBleChat = BLEPeripheralHelper.getInstance();
 
@@ -24,6 +26,7 @@ public class BLEAdvertisingActivity extends FragmentActivity {
         setContentView(R.layout.activity_ble_advertising);
         WebView animation = (WebView)findViewById(R.id.webView2);
         animation.loadUrl("file:///android_asset/advertising_animation.html");
+        Log.e(TAG, "BLEAdvertisingActivity register mBLEAdvCallback");
         mBleChat.register(mBLEAdvCallback);
         mBleChat.init(getApplicationContext());
     }
@@ -64,6 +67,7 @@ public class BLEAdvertisingActivity extends FragmentActivity {
 
             // Set result and finish this Activity
             setResult(Activity.RESULT_OK, intent);
+            Log.e(TAG, "BLEAdvertisingActivity unregister mBLEAdvCallback");
             mBleChat.unregister(mBLEAdvCallback);
             //mBleChat.stopAdvertising();
             finish();

@@ -240,6 +240,7 @@ public class BluetoothChatService {
             mInsecureAcceptThread.cancel();
             mInsecureAcceptThread = null;
         }
+        Log.e(TAG, "stopping all the thread, setState to STATE_NONE");
         setState(STATE_NONE);
     }
 

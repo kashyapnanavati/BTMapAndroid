@@ -298,7 +298,11 @@ public class BluetoothChatFragment extends Fragment {
         });
 
         // Initialize the BluetoothChatService to perform bluetooth connections
-        mChatService = new BluetoothChatService(getActivity(), mHandler);
+        /* Disabling the following code : Why ?
+         * 1. Not using this any more - separated BC and BLE from homescreen
+         * 2. State gets messed when use BLE, BC will mark STATE_NONE during thread closing which is not displaying any UI properly
+         */
+        //mChatService = new BluetoothChatService(getActivity(), mHandler);
 
         // Initialize the buffer for outgoing messages
         mOutStringBuffer = new StringBuffer("");
@@ -505,9 +509,12 @@ public class BluetoothChatFragment extends Fragment {
     private void setState(int newState){
         switch (newState) {
             case BluetoothChatService.STATE_CONNECTED:
+                Log.i(TAG,"Device is connected " + mConnectedDeviceName);
                 //setStatus(getString(R.string.title_connected_to, mConnectedDeviceName));
                 String cs = getResources().getString(R.string.title_connected_to);
-                setStatus(cs + mConnectedDeviceName);
+                final String csd = cs + mConnectedDeviceName;
+                setStatus(csd);
+                //setStatus(csd);
                 //mConversationArrayAdapter.clear();
                 break;
             case BluetoothChatService.STATE_CONNECTING:
@@ -515,6 +522,7 @@ public class BluetoothChatFragment extends Fragment {
                 break;
             case BluetoothChatService.STATE_LISTEN:
             case BluetoothChatService.STATE_NONE:
+                Log.i(TAG,"Device disconnected " + mConnectedDeviceName);
                 setStatus(R.string.title_not_connected);
                 break;
         }
@@ -522,6 +530,7 @@ public class BluetoothChatFragment extends Fragment {
 
     /**
      * The Handler that gets information back from the BluetoothChatService
+     * * Following is unused code - check MainActivity for Bluetooth Classic related code
      */
     private final Handler mHandler = new Handler() {
         @Override
@@ -548,6 +557,7 @@ public class BluetoothChatFragment extends Fragment {
                 case Constants.MESSAGE_DEVICE_NAME:
                     // save the connected device's name
                     mConnectedDeviceName = msg.getData().getString(Constants.DEVICE_NAME);
+                    Log.e(TAG,"Connected Device name" + mConnectedDeviceName);
                     if (null != activity) {
                         Toast.makeText(activity, "Connected to "
                                 + mConnectedDeviceName, Toast.LENGTH_SHORT).show();
@@ -812,7 +822,7 @@ public class BluetoothChatFragment extends Fragment {
                 bundle.putString(Constants.TOAST, new String("[!] Disconnected"));
                 msg.setData(bundle);
                 mHandler.sendMessage(msg);
-
+                Log.i(TAG, "Got callback onDisconnet");
                 showStatus(BluetoothChatService.STATE_NONE);
                 if(mProgressBar!=null){
                     mProgressBar.dismiss();
@@ -978,6 +988,15 @@ public class BluetoothChatFragment extends Fragment {
         public void onData(byte [] data){
             synchronized (mLock) {
                 save2File(data);
+            }
+        }
+
+        @Override
+        public void onClientConnectDevicename(String device_name){
+            synchronized (mLock){
+                Log.i(TAG, "onClientConnectDevicename : Connected to " + device_name);
+                mConnectedDeviceName = device_name;
+                showInfo("Connected to"+ device_name);
             }
         }
 

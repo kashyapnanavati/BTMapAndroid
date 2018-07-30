@@ -26,6 +26,8 @@ import java.io.InputStream;
 import java.io.UnsupportedEncodingException;
 import java.util.ArrayList;
 import java.util.Random;
+import java.util.Timer;
+import java.util.TimerTask;
 import java.util.UUID;
 
 /**
@@ -91,6 +93,7 @@ public class BLEPeripheralHelper {
      * @param chatEventListener
      */
     public void register(BLEPeripheralChatEvents chatEventListener) {
+        Log.e(TAG, "register : Add chateventlisterner");
         mChatListeners.add(chatEventListener);
     }
 
@@ -136,6 +139,7 @@ public class BLEPeripheralHelper {
         NOTIFY_CHAT_ACTION_CONNECT_RFCOMM_SOCKET,
         NOTIFY_CHAT_ACTION_DATA_RFCOMM_SOCKET,
         NOTIFY_CHAT_ACTION_BLE_STREAM,
+        NOTIFY_CHAT_ACTION_CONNECT_DEVICE_NAME,
     }
 
 
@@ -176,10 +180,15 @@ public class BLEPeripheralHelper {
      */
 
     private void notifyChatListeners(NotifyChatAction action, Object data) {
+        Log.e(TAG, "notifyChatListeners action = " + action);
         for (BLEPeripheralChatEvents listener : mChatListeners) {
             switch (action) {
                 case NOTIFY_CHAT_ACTION_MESSAGE:
                     listener.onMessage((String) data);
+                    break;
+                case NOTIFY_CHAT_ACTION_CONNECT_DEVICE_NAME:
+                    Log.e(TAG, "notifyChatListeners --> device name" + data);
+                    listener.onClientConnectDevicename((String) data);
                     break;
                 case NOTIFY_CHAT_ACTION_INFO:
                     listener.onInfo((String) data);
@@ -241,6 +250,23 @@ public class BLEPeripheralHelper {
                 if (newState == BluetoothGatt.STATE_CONNECTED) {
                     mConnectedDevices.add(device);
                     notifyAdvListeners(NotifyAdvAction.NOTIFY_ADV_ACTION_CLIENT_CONNECT, device);
+                    Log.e(TAG, "Testing purpose : Notify to UI from peripheral about device name"+device.getName());
+                    /* WA: sometimes, registering the chateventlistener takes some time to add new client
+                     * due to that, when we Notify for NOTIFY_CHAT_ACTION_CONNECT_DEVICE_NAME event get lost.
+                     * and no callback happens for onClientConnectDevicename. Due to this, delaying the event by 15 ms
+                     * to avoid losing this event.
+                     * Also, this has to be synchroonised with Constants.MESSAGE_DEVICE_NAME such that NOTIFY_CHAT_ACTION_CONNECT_DEVICE_NAME
+                     * must happen before MESSAGE_DEVICE_NAME.
+                     * Below WA fixes issue, where "connected device name was showing null"
+                     */
+                    final String device_name = device.getName();
+                    new Timer().schedule(new TimerTask() {
+                        @Override
+                        public void run() {
+                            // this code will be executed after 2 seconds
+                            notifyChatListeners(NotifyChatAction.NOTIFY_CHAT_ACTION_CONNECT_DEVICE_NAME, device_name);
+                        }
+                    }, 15);
                 } else if (newState == BluetoothGatt.STATE_DISCONNECTED) {
                     mConnectedDevices.remove(device);
                     notifyChatListeners(NotifyChatAction.NOTIFY_CHAT_ACTION_CLIENT_DISCONNECT, device);

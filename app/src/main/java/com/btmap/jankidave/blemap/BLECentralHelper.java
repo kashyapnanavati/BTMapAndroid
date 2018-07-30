@@ -172,6 +172,7 @@ public class BLECentralHelper {
      */
     public void connect(Context context, BluetoothDevice device, BLECentralChatEvents events){
         mBleChatEvents = events;
+        Log.i(TAG, "Calling connectGatt");
         mConnectedGatt = device.connectGatt(context, false, mGattCallback);
     }
 
@@ -245,7 +246,7 @@ public class BLECentralHelper {
                         }
                     };
                     Timer rssiTimer = new Timer();
-                    rssiTimer.schedule(task, 1000, 1000);
+                    rssiTimer.schedule(task, 2000, 2000);
                     gatt.discoverServices();
                 } else if (newState == BluetoothProfile.STATE_DISCONNECTED) {
                     mHandler.post(new Runnable() {
